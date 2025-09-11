@@ -4,22 +4,14 @@ from langchain.chains import RetrievalQA
 from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-# ---------------------------
-# Embeddings
-# ---------------------------
+
 embeddings = SentenceTransformerEmbeddings(model_name="all-mpnet-base-v2")
 
-# ---------------------------
-# Vectorstore (Chroma)
-# ---------------------------
 vectorstore = Chroma(
     persist_directory="chroma_db",
     embedding_function=embeddings
 )
 
-# ---------------------------
-# Hugging Face Qwen2.5-Coder model
-# ---------------------------
 model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"  # or "Qwen/Qwen2.5-Coder-32B-Instruct" for more powerfull version
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -34,7 +26,7 @@ text_gen = pipeline(
     model=model,
     tokenizer=tokenizer,
     max_length=1024,
-    temperature=0
+    temperature=0.7
 )
 
 llm = HuggingFacePipeline(pipeline=text_gen)
