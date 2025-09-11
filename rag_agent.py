@@ -1,42 +1,50 @@
-import os
-from dotenv import load_dotenv
-from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
+from langchain_community.llms import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-# Učitavanje .env fajla
-load_dotenv()  # učitava .env iz istog foldera
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-print("OPENAI_API_KEY:", OPENAI_API_KEY)
+# ---------------------------
+# Embeddings
+# ---------------------------
+embeddings = SentenceTransformerEmbeddings(model_name="all-mpnet-base-v2")
 
-# Inicijalizacija promenljivih
-embeddings = None
-vectorstore = None
-qa = None
+# ---------------------------
+# Vectorstore (Chroma)
+# ---------------------------
+vectorstore = Chroma(
+    persist_directory="chroma_db",
+    embedding_function=embeddings
+)
 
-# Pokušavamo da inicijalizujemo embeddings, vectorstore i QA
-try:
-    if OPENAI_API_KEY:
-        # Embedding model
-        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+# ---------------------------
+# Hugging Face Qwen2.5-Coder model
+# ---------------------------
+model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"  # or "Qwen/Qwen2.5-Coder-32B-Instruct" for more powerfull version
 
-        # Lokalna baza za vektore
-        vectorstore = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map="auto",
+    torch_dtype="auto"
+)
 
-        # QA chain
-        qa = RetrievalQA.from_chain_type(
-            llm=ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0),
-            retriever=vectorstore.as_retriever()
-        )
-    else:
-        print("OPENAI_API_KEY nije definisan! qa neće biti kreiran.")
-except Exception as e:
-    print("Greška pri kreiranju qa ili vectorstore:", e)
-    qa = None
-    vectorstore = None
+text_gen = pipeline(
+    task="text-generation",
+    model=model,
+    tokenizer=tokenizer,
+    max_length=1024,
+    temperature=0
+)
 
-# Funkcija za dodavanje fajlova u Chroma bazu
+llm = HuggingFacePipeline(pipeline=text_gen)
+
+
+qa = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever()
+)
+
 def add_file_to_db(filename: str, content: str):
     if vectorstore:
         vectorstore.add_texts(
@@ -44,6 +52,6 @@ def add_file_to_db(filename: str, content: str):
             metadatas=[{"source": filename}]
         )
         vectorstore.persist()
-        print(f"Fajl '{filename}' dodat u Chroma bazu.")
+        print(f"File '{filename}' added to Chroma database.")
     else:
-        print(f"Vectorstore nije inicijalizovan. Ne mogu dodati fajl: {filename}")
+        print(f"Vectorstore not initialized. Cannot add file: {filename}")
