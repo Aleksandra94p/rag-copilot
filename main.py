@@ -20,7 +20,7 @@ user_question = st.text_area("Enter your question about the repository or code:"
 
 if st.button("Get Answer"):
     if qa:
-        response = qa.run(user_question)
+        response = qa.invoke(user_question)
         st.subheader("Answer:")
         st.write(response)
     else:

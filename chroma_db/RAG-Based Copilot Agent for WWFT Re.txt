@@ -1,0 +1,89 @@
+RAG-Based Copilot Agent for WWFT Repository 
+
+ 
+
+Objective 
+
+Develop a Retrieval-Augmented Generation (RAG) agent using LangChain to serve as a programming copilot for developers. The agent will be trained on our Bitbucket Cloud repository to provide context-aware code suggestions, explanations, and debugging assistance, enhancing productivity and learning for our development team. 
+
+Requirements 
+
+Functional Requirements 
+
+Code Suggestions: Generate code snippets based on repo patterns (e.g., "How do I add a function like in module X?"). 
+
+Explanations: Provide clear explanations of code or architecture in the repo. 
+
+Debugging Assistance: Identify bugs or suggest fixes using repo context. 
+
+Team Accessibility: Deploy as a web app or IDE plugin, accessible to all developers with Bitbucket permissions. 
+
+Dynamic Updates: Support updates to the index when the repo changes (e.g., via Bitbucket webhooks). 
+
+Technical Requirements 
+
+Language: 
+
+Python – chosen for the best support with LangChain, Chroma, and Sentence-Transformers, as well as for rapid prototyping. 
+
+Tools: 
+
+LangChain – for implementing the RAG (Retrieval-Augmented Generation) pipeline, orchestrating the LLM and retrieval database. 
+
+Chroma – vector database for storing embeddings of code and repository documents. 
+
+Sentence-Transformers (all-mpnet-base-v2) – for creating embedding vectors from code and documentation. 
+
+LLM: Qwen2.5-Coder (Hugging Face) – local/open-source model for generating code suggestions, explanations, and debugging assistance. 
+
+FE (Frontend): Streamlit – for the MVP web application accessible to the team. 
+
+Later, a VS Code extension can be implemented for direct IDE integration. 
+
+Bitbucket API – required for accessing repository files and enabling automatic index updates. 
+
+Research Plan 
+
+Understand RAG and LangChain: 
+
+Evaluate LLMs for Coding and capabilities for RAG-Based Copilot 
+
+Local or live model 
+
+Implementation Steps 
+
+Connect to Bitbucket Cloud 
+
+Index the Repository 
+
+Set Up the LLM and RAG Chain 
+
+Build a Team-Friendly Interface 
+
+Automate Updates 
+
+Test and Iterate 
+
+Deployment Options 
+
+Streamlit MVP web app (team accessible) 
+
+Later: VS Code extension for direct IDE integration 
+
+Resources 
+
+LangChain Documentation: Introduction | 🦜️🔗 LangChain for RAG tutorials and APIs. 
+
+Bitbucket API: The Bitbucket Cloud REST API for file access. 
+
+Hugging Face Models: Hugging Face – The AI community building the future. for LLMs like Zephyr-7B or qwen2.5-coder. 
+
+Streamlit: Streamlit • A faster way to build and share data apps for building the web app. 
+
+Chroma: python-chroma.com for vector storage. 
+
+Tutorials: 
+
+LangChain RAG Guide: https://python.langchain.com/docs/use_cases/question_answering/ 
+
+Bitbucket Webhooks: https://support.atlassian.com/bitbucket-cloud/docs/webhooks/ 
