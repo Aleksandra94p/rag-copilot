@@ -1,9 +1,11 @@
 import streamlit as st
 from bitbucket_api import get_repo_files, get_file_content
-from rag_agent import add_file_to_db, qa
+from rag_agent import qa, add_file_to_db
 
 st.title("RAG Copilot PoC")
 
+add_file_to_db("primer.txt", "Ovo je test sadržaj")
+print(qa) 
 # Dugme za indeksiranje fajlova
 if st.button("Index repo files"):
     files = get_repo_files()
