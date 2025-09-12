@@ -48,3 +48,35 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Chroma local DB
+chroma_db/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# VS Code settings
+.vscode/
+
+# PyCharm / JetBrains
+.idea/
+
+# Python cache
+__pycache__/
+
+# Bytecode
+*.pyc
+
+# Logs
+*.log
+
+# Temporary / backup files
+*.bak
+*.swp
