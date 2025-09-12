@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import requests
+import chromadb
 from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import SentenceTransformerEmbeddings
@@ -9,6 +10,7 @@ from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain, MapReduceDocumentsChain
+from chromadb.config import Settings
 
 load_dotenv()
 
@@ -19,6 +21,9 @@ BITBUCKET_USER = "aleksandra24"
 BITBUCKET_API_TOKEN = os.getenv("BITBUCKET_API_TOKEN")
 REPO_SLUG = "rag-data"
 WORKSPACE = "zkr-hq"
+
+import chromadb
+  
 
 prompt_template = """You are an AI programming assistant. Use the provided context to answer the question accurately.
 If the answer is not in the context, say "I don't know".
@@ -60,9 +65,17 @@ def get_llm():
 @st.cache_resource
 def get_vectorstore():
     embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
+
+    client = chromadb.CloudClient(
+        api_key='ck-B5RsFpuw218Z2YSyHsdKhrsawcGVAfFpjX5qLZpkUpX3',
+        tenant='941b5ebd-aafb-4f1f-bb45-07d0b7e2c59a',
+        database='rag-data'
+    )
+
     vectorstore = Chroma(
-        persist_directory=CHROMA_DIR,
-        embedding_function=embeddings
+        embedding_function=embeddings,
+        client=client,
+        collection_name="rag-data"
     )
     return vectorstore
 
