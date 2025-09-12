@@ -83,6 +83,23 @@ def chunk_text(text, chunk_size=500, overlap=50):
         start += chunk_size - overlap
     return chunks
 
+def refresh_chroma_db(limit=20):
+    """
+    Fetches files from Bitbucket and adds new ones to Chroma DB.
+    """
+    repo_files = get_repo_files(limit=limit)
+    for file_path in repo_files:
+        existing_files = [m['source'] for m in vectorstore.get()['metadatas']]
+        if file_path not in existing_files:
+            content = get_file_content(file_path)
+            if content:
+                add_file_to_db(file_path, content)
+                print(f"Added {file_path} to Chroma DB.")
+            else:
+                print(f"Could not fetch content for {file_path}.")
+        else:
+            print(f"{file_path} already in Chroma DB.")
+
 
 def add_file_to_db(filename: str, content: str):
   

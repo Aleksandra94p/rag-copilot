@@ -1,5 +1,5 @@
 import streamlit as st
-from rag_agent import qa, add_file_to_db, get_repo_files, get_file_content, vectorstore
+from rag_agent import qa, add_file_to_db, get_repo_files, get_file_content, refresh_chroma_db, vectorstore
 
 metadatas = vectorstore.get()['metadatas']
 for m in metadatas:
@@ -46,6 +46,14 @@ if st.button("Get Answer"):
         st.write(response)
     else:
         st.error("QA agent is not initialized. Make sure the vectorstore is ready!")
+
+
+st.header("Chroma DB Sync")
+if st.button("Refresh Chroma DB from Bitbucket"):
+    with st.spinner("Refreshing Chroma DB..."):
+        refresh_chroma_db()
+    st.success("Chroma DB refreshed!")
+
 
 st.header("Files in Chroma Database")
 if st.button("Refresh File List"):
