@@ -8,8 +8,6 @@ from langchain.chains import RetrievalQA
 from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from requests.auth import HTTPBasicAuth
-from langchain.prompts import PromptTemplate
-
 
 
 load_dotenv()
@@ -25,12 +23,6 @@ WORKSPACE = "zkr-hq"
 
 print(os.getenv("BITBUCKET_API_TOKEN"))
 
-prompt_template = ""
-
-PROMPT = PromptTemplate(
-    input_variables=["context",  "question"],
-    template=prompt_template
-)
 
 @st.cache_resource
 def get_llm():
@@ -65,10 +57,8 @@ def get_qa():
     llm = get_llm()
     return RetrievalQA.from_chain_type(
         llm=llm,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 1}), #koliko dokumenata se uzima, kasnije mozes da povecas broj dokumenata
-        chain_type = "stuff", # "map_reduce" uzima svaki dokumet posebno pa kombinuje, trebace kasnije
-        return_source_documents=False,
-        chain_type_kwargs={"prompt": PROMPT}  
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 1}), 
+        return_source_documents=False  
     )
 
 qa = get_qa()
