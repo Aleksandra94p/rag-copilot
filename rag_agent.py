@@ -7,22 +7,28 @@ from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from requests.auth import HTTPBasicAuth
-
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain, MapReduceDocumentsChain
 
 load_dotenv()
 
 MODEL_NAME = "Qwen/Qwen2.5-Coder-1.5B-Instruct" 
 CHROMA_DIR = "chroma_db"
 EMBEDDING_MODEL = "all-mpnet-base-v2"
-
 BITBUCKET_USER = "aleksandra24"
 BITBUCKET_API_TOKEN = os.getenv("BITBUCKET_API_TOKEN")
 REPO_SLUG = "rag-data"
 WORKSPACE = "zkr-hq"
 
-print(os.getenv("BITBUCKET_API_TOKEN"))
+prompt_template = """{context}
 
+{question}
+
+Answer:"""
+PROMPT = PromptTemplate(
+    input_variables=["context", "question"],
+    template=prompt_template
+)
 
 @st.cache_resource
 def get_llm():
@@ -41,6 +47,7 @@ def get_llm():
     )
     return HuggingFacePipeline(pipeline=text_gen)
 
+
 @st.cache_resource
 def get_vectorstore():
     embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
@@ -55,30 +62,42 @@ vectorstore = get_vectorstore()
 @st.cache_resource
 def get_qa():
     llm = get_llm()
-    return RetrievalQA.from_chain_type(
+    qa = RetrievalQA.from_chain_type(
         llm=llm,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 1}), 
-        return_source_documents=False  
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 1}),
+        chain_type="stuff",  # može biti 'stuff', 'map_reduce' ili 'refine'
+        chain_type_kwargs={"prompt": PROMPT},
+        return_source_documents=False
     )
+    return qa
 
 qa = get_qa()
 
+def chunk_text(text, chunk_size=500, overlap=50):
+  
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+    return chunks
+
+
 def add_file_to_db(filename: str, content: str):
-    """
-    Adds a text file to the Chroma vectorstore with the metadata 'source'.
-    If the file already exists, it will not be added again.
-    """
+  
     existing_files = [m['source'] for m in vectorstore.get()['metadatas']]
     if filename in existing_files:
         print(f"File '{filename}' already exists in the database.")
         return
 
+    chunks = chunk_text(content)
     vectorstore.add_texts(
-        texts=[content],
-        metadatas=[{"source": filename}]
+        texts=chunks,
+        metadatas=[{"source": filename} for _ in chunks]
     )
     vectorstore.persist()
-    print(f"File '{filename}' added to Chroma database.")
+    print(f"File '{filename}' added to Chroma database as {len(chunks)} chunks.")
 
 def get_repo_files(limit=5):
     
