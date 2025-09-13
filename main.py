@@ -1,5 +1,5 @@
 import streamlit as st
-from rag_agent import qa, add_file_to_db, get_repo_files, get_file_content, refresh_chroma_db, vectorstore
+from rag_agent import get_qa, add_file_to_db, get_repo_files, get_file_content, refresh_chroma_db, vectorstore
 
 metadatas = vectorstore.get()['metadatas']
 for m in metadatas:
@@ -37,6 +37,7 @@ st.header("Ask the RAG Agent")
 user_question = st.text_area("Enter your question about the repository or code:")
 
 if st.button("Get Answer"):
+    qa = get_qa()
     if qa:
         with st.spinner("Generating answer..."):
             response = qa.run(user_question)
