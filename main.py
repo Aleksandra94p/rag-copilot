@@ -10,8 +10,6 @@ for m in metadatas:
 st.set_page_config(page_title="RAG Copilot", layout="wide")
 st.title("RAG Copilot (Qwen2.5-Coder)")
 
-
-
 st.header("Add Bitbucket File")
 repo_files = get_repo_files(limit=5)
 if repo_files:

@@ -67,10 +67,10 @@ def get_vectorstore():
     embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
 
     client = chromadb.CloudClient(
-        api_key='ck-B5RsFpuw218Z2YSyHsdKhrsawcGVAfFpjX5qLZpkUpX3',
-        tenant='941b5ebd-aafb-4f1f-bb45-07d0b7e2c59a',
-        database='rag-data'
-    )
+    api_key=os.getenv("CHROMA_API_KEY"),
+    tenant=os.getenv("CHROMA_TENANT"),
+    database=os.getenv("CHROMA_DATABASE")
+)
 
     vectorstore = Chroma(
         embedding_function=embeddings,
@@ -105,9 +105,7 @@ def chunk_text(text, chunk_size=500, overlap=50):
     return chunks
 
 def refresh_chroma_db(limit=20):
-    """
-    Fetches files from Bitbucket and adds new ones to Chroma DB.
-    """
+   
     repo_files = get_repo_files(limit=limit)
     for file_path in repo_files:
         existing_files = [m['source'] for m in vectorstore.get()['metadatas']]
