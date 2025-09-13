@@ -15,7 +15,6 @@ from chromadb.config import Settings
 load_dotenv()
 
 MODEL_NAME = "Qwen/Qwen2.5-Coder-1.5B-Instruct" 
-CHROMA_DIR = "chroma_db"
 EMBEDDING_MODEL = "all-mpnet-base-v2"
 BITBUCKET_USER = "aleksandra24"
 BITBUCKET_API_TOKEN = os.getenv("BITBUCKET_API_TOKEN")
@@ -24,7 +23,6 @@ WORKSPACE = "zkr-hq"
 
 import chromadb
   
-
 prompt_template = """You are an AI programming assistant. Use the provided context to answer the question accurately.
 If the answer is not in the context, say "I don't know".
 
@@ -132,7 +130,7 @@ def add_file_to_db(filename: str, content: str):
         texts=chunks,
         metadatas=[{"source": filename} for _ in chunks]
     )
-    vectorstore.persist()
+    
     print(f"File '{filename}' added to Chroma database as {len(chunks)} chunks.")
 
 def get_repo_files(limit=5):
