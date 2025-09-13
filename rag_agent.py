@@ -1,7 +1,6 @@
 import os
 import streamlit as st
 import requests
-import chromadb
 from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import SentenceTransformerEmbeddings
@@ -60,6 +59,8 @@ def get_llm():
 
 @st.cache_resource
 def get_vectorstore():
+    import chromadb
+
     embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
 
     client = chromadb.CloudClient(
