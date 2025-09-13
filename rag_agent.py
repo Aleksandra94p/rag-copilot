@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import requests
+
 from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import SentenceTransformerEmbeddings
@@ -10,6 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain, MapReduceDocumentsChain
 from chromadb.config import Settings
+
 
 load_dotenv()
 
@@ -81,16 +83,15 @@ vectorstore = get_vectorstore()
 @st.cache_resource
 def get_qa():
     llm = get_llm()
+    vectorstore = get_vectorstore()  # Cloud vectorstore
     qa = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=vectorstore.as_retriever(search_kwargs={"k": 1}),
-        chain_type="stuff",  # može biti 'stuff', 'map_reduce' ili 'refine'
+        chain_type="stuff",
         chain_type_kwargs={"prompt": PROMPT},
         return_source_documents=False
     )
     return qa
-
-qa = get_qa()
 
 def chunk_text(text, chunk_size=500, overlap=50):
     chunks = []
