@@ -1,5 +1,4 @@
 import streamlit as st
-import chromadb
 from rag_agent import qa, add_file_to_db, get_repo_files, get_file_content, refresh_chroma_db, vectorstore
 
 metadatas = vectorstore.get()['metadatas']

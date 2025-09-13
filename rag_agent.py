@@ -21,8 +21,6 @@ BITBUCKET_API_TOKEN = os.getenv("BITBUCKET_API_TOKEN")
 REPO_SLUG = "rag-data"
 WORKSPACE = "zkr-hq"
 
-import chromadb
-  
 prompt_template = """You are an AI programming assistant. Use the provided context to answer the question accurately.
 If the answer is not in the context, say "I don't know".
 
