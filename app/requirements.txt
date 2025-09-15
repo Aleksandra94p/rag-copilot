@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-dotenv
+requests
+langchain
+langchain-community
+transformers
+sentence-transformers
+chromadb-client
+torch
+python-multipart
