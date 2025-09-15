@@ -9,19 +9,20 @@ _vectorstore = None
 def get_vectorstore():
     global _vectorstore
     if _vectorstore is None:
+        api_key = os.getenv("CHROMA_API_KEY")
+        tenant = os.getenv("CHROMA_TENANT")
+        database = os.getenv("CHROMA_DATABASE")
+        if not all([api_key, tenant, database]):
+            raise RuntimeError("CHROMA environment variables are not set!")
+
         embeddings = SentenceTransformerEmbeddings(model_name="all-mpnet-base-v2")
-        client = CloudClient(
-            api_key=os.getenv("CHROMA_API_KEY"),
-            tenant=os.getenv("CHROMA_TENANT"),
-            database=os.getenv("CHROMA_DATABASE")
-        )
+        client = CloudClient(api_key=api_key, tenant=tenant, database=database)
         _vectorstore = Chroma(
             embedding_function=embeddings,
             client=client,
             collection_name="rag-data"
         )
     return _vectorstore
-
 def add_file_to_db(filename: str, content: str):
     vs = get_vectorstore()
     existing_files = [m['source'] for m in vs.get()['metadatas']]
