@@ -3,8 +3,6 @@ from pydantic import BaseModel
 from app.repo import get_repo_files, get_file_content
 from app.vectorstore import get_vectorstore, add_file_to_db, refresh_chroma_db
 from app.llm import query_llm
-import uvicorn
-import os
 
 app = FastAPI(title="RAG Copilot Backend")
 
@@ -36,5 +34,3 @@ def ask_question(q: Question):
     answer = query_llm(q.question, context)
     return {"answer": answer}
 
-port = int(os.environ.get("PORT", 10000))
-uvicorn.run("app.main:app", host="0.0.0.0", port=port)
