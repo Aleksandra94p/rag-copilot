@@ -25,8 +25,13 @@ st.header("Ask the RAG Agent")
 question = st.text_area("Enter your question:")
 if st.button("Get Answer"):
     resp = requests.post(f"{BACKEND_URL}/ask", json={"question": question})
-    answer = resp.json().get("answer")
-    st.write(answer)
+    st.write("Status code:", resp.status_code)
+    st.write("Raw response:", resp.text)
+    if resp.headers.get("content-type") == "application/json":
+        answer = resp.json().get("answer")
+        st.write(answer)
+    else:
+        st.error("Ask endpoint did not return JSON")
 
 st.header("Chroma DB Sync")
 if st.button("Refresh DB"):
