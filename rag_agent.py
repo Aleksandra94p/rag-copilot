@@ -1,7 +1,5 @@
 import os
-import streamlit as st
 import requests
-
 from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import SentenceTransformerEmbeddings
@@ -9,13 +7,10 @@ from langchain.chains import RetrievalQA
 from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain, MapReduceDocumentsChain
-from chromadb.config import Settings
-
 
 load_dotenv()
 
-MODEL_NAME = "Qwen/Qwen2.5-Coder-1.5B-Instruct" 
+MODEL_NAME = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
 EMBEDDING_MODEL = "all-mpnet-base-v2"
 BITBUCKET_USER = "aleksandra24"
 BITBUCKET_API_TOKEN = os.getenv("BITBUCKET_API_TOKEN")
@@ -36,62 +31,68 @@ If the question is about a bug or error, identify the problem and suggest a fix.
 If the question is about architecture or documentation, provide a clear explanation.
 
 Answer:"""
-PROMPT = PromptTemplate(
-    input_variables=["context", "question"],
-    template=prompt_template
-)
+PROMPT = PromptTemplate(input_variables=["context", "question"], template=prompt_template)
 
-@st.cache_resource
+
+_llm = None
 def get_llm():
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_NAME,
-        device_map="auto",
-        torch_dtype="auto"
-    )
-    text_gen = pipeline(
-        task="text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=150,  
-        temperature=0.3
-    )
-    return HuggingFacePipeline(pipeline=text_gen)
+    global _llm
+    if _llm is None:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_NAME,
+            device_map="auto",
+            torch_dtype="auto"
+        )
+        text_gen = pipeline(
+            task="text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            max_new_tokens=150,
+            temperature=0.3
+        )
+        _llm = HuggingFacePipeline(pipeline=text_gen)
+    return _llm
 
 
-@st.cache_resource
+_vectorstore = None
 def get_vectorstore():
-    import chromadb
+    global _vectorstore
+    if _vectorstore is None:
+        from chromadb import CloudClient
+        from langchain_community.embeddings import SentenceTransformerEmbeddings
 
-    embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
+        embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
+        client = CloudClient(
+            api_key=os.getenv("CHROMA_API_KEY"),
+            tenant=os.getenv("CHROMA_TENANT"),
+            database=os.getenv("CHROMA_DATABASE")
+        )
 
-    client = chromadb.CloudClient(
-    api_key=os.getenv("CHROMA_API_KEY"),
-    tenant=os.getenv("CHROMA_TENANT"),
-    database=os.getenv("CHROMA_DATABASE")
-)
-
-    vectorstore = Chroma(
-        embedding_function=embeddings,
-        client=client,
-        collection_name="rag-data"
-    )
-    return vectorstore
+        _vectorstore = Chroma(
+            embedding_function=embeddings,
+            client=client,
+            collection_name="rag-data"
+        )
+    return _vectorstore
 
 vectorstore = get_vectorstore()
 
-@st.cache_resource
+_qa = None
 def get_qa():
-    llm = get_llm()
-    vectorstore = get_vectorstore()  # Cloud vectorstore
-    qa = RetrievalQA.from_chain_type(
-        llm=llm,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 1}),
-        chain_type="stuff",
-        chain_type_kwargs={"prompt": PROMPT},
-        return_source_documents=False
-    )
-    return qa
+    global _qa
+    if _qa is None:
+        llm = get_llm()
+        vs = get_vectorstore()
+        _qa = RetrievalQA.from_chain_type(
+            llm=llm,
+            retriever=vs.as_retriever(search_kwargs={"k": 1}),
+            chain_type="stuff",
+            chain_type_kwargs={"prompt": PROMPT},
+            return_source_documents=False
+        )
+    return _qa
+
 
 def chunk_text(text, chunk_size=500, overlap=50):
     chunks = []
@@ -102,8 +103,19 @@ def chunk_text(text, chunk_size=500, overlap=50):
         start += chunk_size - overlap
     return chunks
 
+def add_file_to_db(filename: str, content: str):
+    existing_files = [m['source'] for m in vectorstore.get()['metadatas']]
+    if filename in existing_files:
+        print(f"File '{filename}' already exists in the database.")
+        return
+    chunks = chunk_text(content)
+    vectorstore.add_texts(
+        texts=chunks,
+        metadatas=[{"source": filename} for _ in chunks]
+    )
+    print(f"File '{filename}' added to Chroma DB as {len(chunks)} chunks.")
+
 def refresh_chroma_db(limit=20):
-   
     repo_files = get_repo_files(limit=limit)
     for file_path in repo_files:
         existing_files = [m['source'] for m in vectorstore.get()['metadatas']]
@@ -117,59 +129,26 @@ def refresh_chroma_db(limit=20):
         else:
             print(f"{file_path} already in Chroma DB.")
 
-
-def add_file_to_db(filename: str, content: str):
-  
-    existing_files = [m['source'] for m in vectorstore.get()['metadatas']]
-    if filename in existing_files:
-        print(f"File '{filename}' already exists in the database.")
-        return
-
-    chunks = chunk_text(content)
-    vectorstore.add_texts(
-        texts=chunks,
-        metadatas=[{"source": filename} for _ in chunks]
-    )
-    
-    print(f"File '{filename}' added to Chroma database as {len(chunks)} chunks.")
-
 def get_repo_files(limit=5):
-    
     url = f"https://api.bitbucket.org/2.0/repositories/{WORKSPACE}/{REPO_SLUG}/src/main/"
-
-    headers = {
-        "Authorization": f"Bearer {BITBUCKET_API_TOKEN}",
-        "Accept": "application/json"
-    }
-
+    headers = {"Authorization": f"Bearer {BITBUCKET_API_TOKEN}", "Accept": "application/json"}
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        files = [f['path'] for f in data.get('values', [])]
+        return files[:limit]
+    except Exception as e:
         print(f"Error fetching repo files: {e}")
         return []
 
-    try:
-        data = response.json()
-        files = [f['path'] for f in data.get('values', [])]
-        return files[:limit]
-    except ValueError as e:
-        print(f"JSON parsing error: {e}")
-        return []
-
 def get_file_content(file_path):
-    
     url = f"https://api.bitbucket.org/2.0/repositories/{WORKSPACE}/{REPO_SLUG}/src/main/{file_path}"
-
-    headers = {
-        "Authorization": f"Bearer {BITBUCKET_API_TOKEN}",
-        "Accept": "application/json"
-    }
-    
+    headers = {"Authorization": f"Bearer {BITBUCKET_API_TOKEN}", "Accept": "application/json"}
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        return response.text
-    except requests.exceptions.RequestException as e:
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return resp.text
+    except Exception as e:
         print(f"Error fetching file {file_path}: {e}")
         return ""
