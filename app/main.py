@@ -8,6 +8,10 @@ app = FastAPI(title="RAG Copilot Backend")
 
 class Question(BaseModel):
     question: str
+    
+@app.get("/")
+def read_root():
+    return {"message": "API is live!"}
 
 @app.get("/files")
 def list_files(limit: int = 10):
