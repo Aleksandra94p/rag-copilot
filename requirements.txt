@@ -1,9 +1,11 @@
-streamlit
+fastapi
+uvicorn
 python-dotenv
 requests
 langchain
 langchain-community
 transformers
 sentence-transformers
-chromadb
+chromadb-client
 torch
+python-multipart
