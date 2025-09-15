@@ -23,16 +23,37 @@ if uploaded_file:
 
 st.header("Ask the RAG Agent")
 question = st.text_area("Enter your question:")
-if st.button("Get Answer"):
-    resp = requests.post(f"{BACKEND_URL}/ask", json={"question": question})
-    st.write("Status code:", resp.status_code)
-    st.write("Raw response:", resp.text)
-    if resp.headers.get("content-type") == "application/json":
-        answer = resp.json().get("answer")
-        st.write(answer)
-    else:
-        st.error("Ask endpoint did not return JSON")
 
+if st.button("Get Answer"):
+    if not question.strip():
+        st.warning("Please enter a question first!")
+    else:
+        try:
+            resp = requests.post(f"{BACKEND_URL}/ask", json={"question": question}, timeout=10)
+            
+            st.write("Status code:", resp.status_code)
+            st.write("Raw response:", resp.text)
+            
+            # Provera da li je odgovor JSON
+            if "application/json" in resp.headers.get("content-type", ""):
+                data = resp.json()
+                answer = data.get("answer")
+                
+                if answer:
+                    st.success(answer)
+                else:
+                    st.warning("Backend returned JSON but no 'answer' field found.")
+            else:
+                st.error("Backend did not return JSON. Check backend logs.")
+                
+        except requests.exceptions.Timeout:
+            st.error("Request timed out. Please try again later.")
+        except requests.exceptions.ConnectionError:
+            st.error("Cannot connect to backend. Is it running?")
+        except requests.exceptions.RequestException as e:
+            st.error(f"An unexpected error occurred: {e}")
+        except ValueError as e:  # hvata JSONDecodeError
+            st.error(f"Failed to parse JSON response: {e}")
 st.header("Chroma DB Sync")
 if st.button("Refresh DB"):
     resp = requests.post(f"{BACKEND_URL}/refresh")
