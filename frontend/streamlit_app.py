@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-BACKEND_URL = "http://localhost:8000"  # or deploy URL
+BACKEND_URL = "https://rag-copilot-for-wwft-repo.onrender.com"
 
 st.set_page_config(page_title="RAG Copilot", layout="wide")
 st.title("RAG Copilot (Qwen2.5-Coder)")
